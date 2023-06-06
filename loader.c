@@ -40,6 +40,8 @@ void print_phdr_info(Elf32_Phdr *phdr, int index) {
        (phdr->p_flags & PF_W) ? 'W' : ' ',
        (phdr->p_flags & PF_X) ? 'E' : ' ',
        phdr->p_align);
+       printf("My protection flags are: %s%s%s\n", (phdr->p_flags & PF_R) ? "PROT_READ, " : " ", (phdr->p_flags & PF_W) ? "PROT_WRITE, " : " ", 
+       (phdr->p_flags & PF_X) ? "PROT_EXEC" : "");
 
 }
 
