@@ -95,11 +95,18 @@ int main(int argc, char *argv[]) {
         close(fd);
         return 1;
     }
-    
+
+
+    // task 1a and part of 1b(need to understand the printing of the flags and maybe make it prettier)
     foreach_phdr(map_start, print_phdr_info, 0);
+
+    // task 2b
     // foreach_phdr(map_start, load_phdr, 0);
 
+    // task 2c and 2d, doesnt work for now
     // startup(argc -1, argv + 1, map_start);
+
+    //maybe need to munmap all the header?
     
     munmap(map_start, file_size);
     close(fd);
