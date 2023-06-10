@@ -5,6 +5,11 @@
 #include <sys/mman.h>
 #include <elf.h>
 #include <unistd.h>
+// #include <startup.s>
+extern int startup(int argc,char** argv,int(*func)(int,char**));
+
+int fd;
+int count = 1;
 
 int foreach_phdr(void *map_start, void (*func)(Elf32_Phdr *, int), int arg) {
     Elf32_Ehdr *ehdr = (Elf32_Ehdr *)map_start;
@@ -13,7 +18,7 @@ int foreach_phdr(void *map_start, void (*func)(Elf32_Phdr *, int), int arg) {
     printf("Type\tOffset\t\tVirtAddr\tPhysAddr\tFileSiz\tMemSiz\tFlg\tAlign\n");
     for (int i = 0; i < ehdr->e_phnum; ++i) {
         // func(phdr + (ehdr->e_phentsize * i), i);
-        func(&phdr[i] , i);
+        func(&phdr[i] , fd);
     }
     
     return 0;
@@ -40,9 +45,32 @@ void print_phdr_info(Elf32_Phdr *phdr, int index) {
        (phdr->p_flags & PF_W) ? 'W' : ' ',
        (phdr->p_flags & PF_X) ? 'E' : ' ',
        phdr->p_align);
-       printf("My protection flags are: %s%s%s\n", (phdr->p_flags & PF_R) ? "PROT_READ, " : " ", (phdr->p_flags & PF_W) ? "PROT_WRITE, " : " ", 
-       (phdr->p_flags & PF_X) ? "PROT_EXEC" : "");
+       printf("My protection flags are: %s%s%s\n",
+           (phdr->p_flags & PF_R) ? "PROT_READ, " : " ",
+           (phdr->p_flags & PF_W) ? "PROT_WRITE, " : " ",
+           (phdr->p_flags & PF_X) ? "PROT_EXEC" : "");
+       // print the other flag
+}
 
+void load_phdr(Elf32_Phdr *phdr, int fd){
+    void *addr;
+
+    if (phdr->p_type == PT_LOAD) {
+        void* vaddr = (void*)(phdr->p_vaddr & 0xfffff000);
+        unsigned int offset = phdr->p_offset & 0xfffff000;
+        unsigned int padding = phdr->p_vaddr & 0xfff;
+
+        addr = mmap(vaddr, phdr->p_memsz + padding, phdr->p_flags, MAP_FIXED | MAP_PRIVATE, fd, offset); 
+
+        if (addr == MAP_FAILED) {
+            perror("mmap failed ");
+            exit(1);
+        }
+
+        printf("Mapped program header #%d:\n", count);
+        print_phdr_info(phdr, count);
+        count++;
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -52,7 +80,7 @@ int main(int argc, char *argv[]) {
     }
     
     const char *file_name = argv[1];
-    int fd = open(file_name, O_RDONLY);
+    fd = open(file_name, O_RDONLY);
     
     if (fd == -1) {
         perror("Error opening file");
@@ -69,6 +97,9 @@ int main(int argc, char *argv[]) {
     }
     
     foreach_phdr(map_start, print_phdr_info, 0);
+    // foreach_phdr(map_start, load_phdr, 0);
+
+    // startup(argc -1, argv + 1, map_start);
     
     munmap(map_start, file_size);
     close(fd);
