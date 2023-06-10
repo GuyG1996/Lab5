@@ -98,13 +98,14 @@ int main(int argc, char *argv[]) {
 
 
     // task 1a and part of 1b(need to understand the printing of the flags and maybe make it prettier)
-    foreach_phdr(map_start, print_phdr_info, 0);
+    // foreach_phdr(map_start, print_phdr_info, 0);
 
     // task 2b
-    // foreach_phdr(map_start, load_phdr, 0);
+    foreach_phdr(map_start, load_phdr, 0);
 
     // task 2c and 2d, doesnt work for now
-    // startup(argc -1, argv + 1, map_start);
+    Elf32_Ehdr *ehdr = (Elf32_Ehdr *)map_start;
+    startup(argc -1, argv + 1, (void*) ehdr->e_entry);
 
     //maybe need to munmap all the header?
     
