@@ -17,7 +17,6 @@ int foreach_phdr(void *map_start, void (*func)(Elf32_Phdr *, int), int arg) {
 
     printf("Type\tOffset\t\tVirtAddr\tPhysAddr\tFileSiz\tMemSiz\tFlg\tAlign\n");
     for (int i = 0; i < ehdr->e_phnum; ++i) {
-        // func(phdr + (ehdr->e_phentsize * i), i);
         func(&phdr[i] , fd);
     }
     
@@ -45,11 +44,14 @@ void print_phdr_info(Elf32_Phdr *phdr, int index) {
        (phdr->p_flags & PF_W) ? 'W' : ' ',
        (phdr->p_flags & PF_X) ? 'E' : ' ',
        phdr->p_align);
-       printf("My protection flags are: %s%s%s\n",
+       printf("The protection flags are: %s%s%s\n",
            (phdr->p_flags & PF_R) ? "PROT_READ, " : " ",
            (phdr->p_flags & PF_W) ? "PROT_WRITE, " : " ",
            (phdr->p_flags & PF_X) ? "PROT_EXEC" : "");
-       // print the other flag
+        if(phdr->p_type == PT_LOAD)
+            printf("The mapping flags are: MAP_PRIVATE | MAP_FIXED\n");
+        printf("\n");
+       
 }
 
 void load_phdr(Elf32_Phdr *phdr, int fd){
@@ -60,7 +62,7 @@ void load_phdr(Elf32_Phdr *phdr, int fd){
         unsigned int offset = phdr->p_offset & 0xfffff000;
         unsigned int padding = phdr->p_vaddr & 0xfff;
 
-        addr = mmap(vaddr, phdr->p_memsz + padding, phdr->p_flags, MAP_FIXED | MAP_PRIVATE, fd, offset); 
+        addr = mmap(vaddr, phdr->p_memsz + padding, phdr->p_flags, MAP_PRIVATE | MAP_FIXED, fd, offset); 
 
         if (addr == MAP_FAILED) {
             perror("mmap failed ");
@@ -95,11 +97,19 @@ int main(int argc, char *argv[]) {
         close(fd);
         return 1;
     }
-    
-    foreach_phdr(map_start, print_phdr_info, 0);
-    // foreach_phdr(map_start, load_phdr, 0);
 
-    // startup(argc -1, argv + 1, map_start);
+
+    // task 1a and part of 1b(need to understand the printing of the flags and maybe make it prettier)
+    // foreach_phdr(map_start, print_phdr_info, 0);
+
+    // task 2b
+    foreach_phdr(map_start, load_phdr, 0);
+
+    // task 2c and 2d, doesnt work for now
+    Elf32_Ehdr *ehdr = (Elf32_Ehdr *)map_start;
+    startup(argc -1, argv + 1, (void*) ehdr->e_entry);
+
+    //maybe need to munmap all the header?
     
     munmap(map_start, file_size);
     close(fd);
