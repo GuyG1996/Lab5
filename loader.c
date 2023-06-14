@@ -1,3 +1,4 @@
+// Guy Ginat 206922544, Ron Hadad 209260645
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -6,7 +7,7 @@
 #include <elf.h>
 #include <unistd.h>
 // #include <startup.s>
-extern int startup(int argc,char** argv,int(*func)(int,char**));
+int startup(int argc,char** argv,int(*func)(int,char**));
 
 int fd;
 int count = 1;
@@ -99,17 +100,17 @@ int main(int argc, char *argv[]) {
     }
 
 
-    // task 1a and part of 1b(need to understand the printing of the flags and maybe make it prettier)
+    // task 1a and 1b
     // foreach_phdr(map_start, print_phdr_info, 0);
 
     // task 2b
     foreach_phdr(map_start, load_phdr, 0);
 
-    // task 2c and 2d, doesnt work for now
+    // task 2c and 2d
     Elf32_Ehdr *ehdr = (Elf32_Ehdr *)map_start;
     startup(argc -1, argv + 1, (void*) ehdr->e_entry);
 
-    //maybe need to munmap all the header?
+    // // //maybe need to munmap all the header?
     
     munmap(map_start, file_size);
     close(fd);
